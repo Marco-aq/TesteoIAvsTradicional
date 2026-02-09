@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulador IMC: IA vs Tradicional</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .slider {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 8px;
+            border-radius: 5px;
+            background: #e2e8f0;
+            outline: none;
+        }
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #3b82f6;
+            cursor: pointer;
+            border: 2px solid white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-900 min-h-screen p-4 md:p-8">
+
+    <div class="max-w-6xl mx-auto space-y-8">
+        <!-- Header -->
+        <header class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+                <h1 class="text-3xl font-bold text-slate-800 flex items-center gap-2">
+                    <i data-lucide="activity" class="text-blue-500"></i>
+                    Simulador IMC: IA vs Tradicional
+                </h1>
+                <p class="text-slate-500 text-sm">Comparativa de cálculo matemático frente a regresión lineal.</p>
+            </div>
+            <button id="trainBtn" class="bg-indigo-600 text-white px-6 py-2 rounded-lg font-semibold flex items-center gap-2 hover:bg-indigo-700 transition-all shadow-md active:scale-95">
+                <i data-lucide="brain" size="18"></i>
+                <span id="btnText">Re-entrenar Modelo</span>
+            </button>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Controls -->
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-6">
+                <h2 class="text-lg font-semibold flex items-center gap-2 border-b pb-3 text-slate-700">
+                    <i data-lucide="user" class="text-slate-400"></i>
+                    Parámetros de Entrada
+                </h2>
+                
+                <div class="space-y-6">
+                    <div>
+                        <div class="flex justify-between mb-2">
+                            <label class="text-sm font-medium text-slate-600">Peso</label>
+                            <span class="text-sm font-bold text-blue-600" id="pesoVal">70 kg</span>
+                        </div>
+                        <input type="range" id="pesoInput" min="30" max="150" value="70" class="slider">
+                    </div>
+                    <div>
+                        <div class="flex justify-between mb-2">
+                            <label class="text-sm font-medium text-slate-600">Altura</label>
+                            <span class="text-sm font-bold text-blue-600" id="alturaVal">1.75 m</span>
+                        </div>
+                        <input type="range" id="alturaInput" min="1.0" max="2.2" step="0.01" value="1.75" class="slider">
+                    </div>
+                </div>
+
+                <div class="bg-blue-50 p-4 rounded-xl border border-blue-100 mt-8">
+                    <h3 class="text-blue-800 font-semibold text-xs mb-2 flex items-center gap-1 uppercase tracking-wider">
+                        <i data-lucide="brain" size="14"></i> Estado del Modelo (TF)
+                    </h3>
+                    <div class="text-xs font-mono text-blue-700 space-y-1" id="weightsDisplay">
+                        <p>W1: 0.1500</p>
+                        <p>W2: -12.5000</p>
+                        <p>b: 18.2000</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Results -->
+            <div class="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Tradicional -->
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col items-center justify-center text-center relative overflow-hidden group">
+                    <div class="absolute top-0 right-0 p-4 opacity-5">
+                        <i data-lucide="calculator" style="width: 80px; height: 80px;"></i>
+                    </div>
+                    <span class="text-blue-500 font-bold uppercase tracking-wider text-xs mb-2">Fórmula Tradicional</span>
+                    <div class="text-5xl font-black text-slate-800 mb-1" id="tradResult">22.86</div>
+                    <p class="text-slate-400 text-xs italic">Peso / Altura²</p>
+                </div>
+
+                <!-- IA -->
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col items-center justify-center text-center relative overflow-hidden group">
+                    <div class="absolute top-0 right-0 p-4 opacity-5">
+                        <i data-lucide="brain" style="width: 80px; height: 80px;"></i>
+                    </div>
+                    <span class="text-purple-500 font-bold uppercase tracking-wider text-xs mb-2">IA (TensorFlow)</span>
+                    <div class="text-5xl font-black text-slate-800 mb-1" id="iaResult">22.95</div>
+                    <p class="text-slate-400 text-xs italic">W · X + b</p>
+                </div>
+
+                <!-- Diferencia Graph -->
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 md:col-span-2">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-slate-700 font-semibold">Comparativa en Tiempo Real</h3>
+                        <span id="diffBadge" class="text-xs px-2 py-1 rounded-full bg-green-100 text-green-700">Diferencia: 0.00</span>
+                    </div>
+                    <div class="h-48">
+                        <canvas id="barChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- History Chart -->
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+            <h2 class="text-lg font-semibold mb-6">Tendencia de Predicciones</h2>
+            <div class="h-64">
+                <canvas id="lineChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Footers -->
+        <footer class="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm text-slate-500 pb-10">
+            <div class="flex gap-3 bg-white p-4 rounded-xl border border-slate-200">
+                <i data-lucide="alert-circle" class="shrink-0 text-blue-400"></i>
+                <p><strong>Fórmula Real:</strong> Es determinista y exacta. Define el estándar médico.</p>
+            </div>
+            <div class="flex gap-3 bg-white p-4 rounded-xl border border-slate-200">
+                <i data-lucide="brain" class="shrink-0 text-purple-400"></i>
+                <p><strong>IA (Neto):</strong> Aprende patrones. En el código original de Python, se entrena con 10 ejemplos para aproximar la fórmula.</p>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        // --- ESTADO INICIAL ---
+        let weights = { w1: 0.33, w2: -16.5, b: 25.4 };
+        let history = [];
+        let isTraining = false;
+
+        // --- REFERENCIAS DOM ---
+        const pesoInput = document.getElementById('pesoInput');
+        const alturaInput = document.getElementById('alturaInput');
+        const pesoVal = document.getElementById('pesoVal');
+        const alturaVal = document.getElementById('alturaVal');
+        const tradResult = document.getElementById('tradResult');
+        const iaResult = document.getElementById('iaResult');
+        const diffBadge = document.getElementById('diffBadge');
+        const weightsDisplay = document.getElementById('weightsDisplay');
+        const trainBtn = document.getElementById('trainBtn');
+        const btnText = document.getElementById('btnText');
+
+        // --- GRÁFICOS ---
+        const barCtx = document.getElementById('barChart').getContext('2d');
+        const barChart = new Chart(barCtx, {
+            type: 'bar',
+            data: {
+                labels: ['Tradicional', 'IA (TensorFlow)'],
+                datasets: [{
+                    data: [0, 0],
+                    backgroundColor: ['#3b82f6', '#8b5cf6'],
+                    borderRadius: 8
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: { x: { display: false, max: 50 }, y: { grid: { display: false } } }
+            }
+        });
+
+        const lineCtx = document.getElementById('lineChart').getContext('2d');
+        const lineChart = new Chart(lineCtx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [
+                    { label: 'Tradicional', data: [], borderColor: '#3b82f6', tension: 0.4 },
+                    { label: 'IA', data: [], borderColor: '#8b5cf6', tension: 0.4 }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: { y: { beginAtZero: false } }
+            }
+        });
+
+        // --- LÓGICA DE CÁLCULO ---
+        function updateUI() {
+            const p = parseFloat(pesoInput.value);
+            const a = parseFloat(alturaInput.value);
+            
+            pesoVal.innerText = `${p} kg`;
+            alturaVal.innerText = `${a} m`;
+
+            // Tradicional
+            const trad = p / (a * a);
+            tradResult.innerText = trad.toFixed(2);
+
+            // IA
+            const ia = (p * weights.w1) + (a * weights.w2) + weights.b;
+            iaResult.innerText = ia.toFixed(2);
+
+            // Diferencia
+            const diff = Math.abs(trad - ia);
+            diffBadge.innerText = `Diferencia: ${diff.toFixed(4)}`;
+            diffBadge.className = `text-xs px-2 py-1 rounded-full ${diff < 1 ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`;
+
+            // Actualizar Gráfico Barras
+            barChart.data.datasets[0].data = [trad, ia];
+            barChart.update('none');
+
+            // Actualizar Historial (Debounced)
+            updateHistory(trad, ia, p, a);
+            
+            // Pesos
+            weightsDisplay.innerHTML = `
+                <p>W1: ${weights.w1.toFixed(4)}</p>
+                <p>W2: ${weights.w2.toFixed(4)}</p>
+                <p>b: ${weights.b.toFixed(4)}</p>
+            `;
+        }
+
+        let historyTimeout;
+        function updateHistory(trad, ia, p, a) {
+            clearTimeout(historyTimeout);
+            historyTimeout = setTimeout(() => {
+                const label = `${p}k/${a}m`;
+                if (lineChart.data.labels.length > 15) {
+                    lineChart.data.labels.shift();
+                    lineChart.data.datasets[0].data.shift();
+                    lineChart.data.datasets[1].data.shift();
+                }
+                lineChart.data.labels.push(label);
+                lineChart.data.datasets[0].data.push(trad.toFixed(2));
+                lineChart.data.datasets[1].data.push(ia.toFixed(2));
+                lineChart.update();
+            }, 500);
+        }
+
+        // --- SIMULACIÓN ENTRENAMIENTO ---
+        trainBtn.addEventListener('click', () => {
+            if (isTraining) return;
+            isTraining = true;
+            let step = 0;
+            const targetW1 = 0.33, targetW2 = -16.5, targetB = 25.4;
+            
+            // Pesos aleatorios iniciales
+            weights = { w1: Math.random(), w2: -Math.random()*10, b: Math.random()*20 };
+
+            const interval = setInterval(() => {
+                step++;
+                btnText.innerText = `Entrenando ${step}%...`;
+                
+                // Convergencia suave
+                weights.w1 += (targetW1 - weights.w1) * 0.1;
+                weights.w2 += (targetW2 - weights.w2) * 0.1;
+                weights.b += (targetB - weights.b) * 0.1;
+
+                updateUI();
+
+                if (step >= 100) {
+                    clearInterval(interval);
+                    isTraining = false;
+                    btnText.innerText = `Re-entrenar Modelo`;
+                }
+            }, 30);
+        });
+
+        // Event Listeners
+        pesoInput.addEventListener('input', updateUI);
+        alturaInput.addEventListener('input', updateUI);
+
+        // Init
+        window.onload = () => {
+            lucide.createIcons();
+            updateUI();
+        };
+    </script>
+</body>
+</html>
